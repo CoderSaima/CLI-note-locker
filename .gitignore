@@ -1,0 +1,14 @@
+# Ignore local lock and system configuration files
+master.hash
+secret.key.enc
+system.salt
+attempts.json
+
+# Ignore local notes database and temporary exports
+enNote.txt
+decrypted_notes.txt
+Backup/
+
+# Ignore Python cache profiles
+__pycache__/
+*.pyc

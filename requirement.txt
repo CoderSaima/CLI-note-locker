@@ -1,0 +1,43 @@
+# ---------- Project Requirements ----------------
+1- Create a unique security key (stored safely as a file).Write a sensitive note (like a password or recovery seed) and save it. 
+2- The script will automatically encrypt the text and save it into a (.txt)
+ file so no human can read it directly.
+3- View the note, where the script reads the scrambled file, decrypts it using the key, 
+and prints the original text back onto the terminal screen.
+
+Option A: Writing Directly inside the Terminal (How the Code Works Now)In the script I provided, 
+the user does not open Notepad manually. Instead, the terminal asks them a question: Enter 
+the secret note you want to store: .The user types the message directly into the terminal 
+and presses Enter.Python captures what they typed, transforms it into encrypted gibberish,
+ and safely saves it behind the scenes into a file named encrypted_notes.txt.📝 
+ 
+ Option B: Reading an Existing Notepad File (Advanced Version)If you want the project to actually read 
+ a text file that a user already wrote inside Windows Notepad, we can adapt the code easily!In this 
+ scenario:The user manually opens Notepad, writes their secrets, and saves it as my_secrets.txt.They 
+ run your Python program.Your Python program uses pathlib to open my_secrets.txt, reads the text, encrypts it, 
+ overrides the file with the encrypted text, and deletes the original readable text.
+ 
+ What Happens to the Text?No matter which option you choose, if anyone tries to open that file with
+  Notepad later, they won't see their notes. They will see something unreadable 
+  like this: gAAAAABm2Y1B_Z4Q2Lp...[Scrambled Crypto Text]...x89A==
+
+
+Steps
+1- Step 1: Import Tools and Set Up Paths
+First, tell Python which modules you need. We need os and pathlib for file handling, and cryptography for security.
+2- Handle the Secret Key
+Encryption needs a key. We must write a function that generates a key if it does not exist, and another function to read it.
+3- Write and Encrypt the Note
+Now, let's write the core feature. This function takes a user's text input, converts it to bytes, encrypts it, and saves it.
+4- Read and Decrypt the Notes
+We need a way to read the scrambled text files and convert them back into English strings
+5- Build the Interactive Menu Loop
+Finally, let's tie it all together into an interactive terminal menu loop using a while True statement.
+
+pip install cryptography <- if you haven't
+
+
+
+Your password creates the Master Key.
+The Master Key encrypts the Secret Key.
+The Secret Key encrypts your Notes.

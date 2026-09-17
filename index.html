@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Note Locker</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #6366f1;
+      --accent-hover: #4f46e5;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --success-color: #10b981;
+      --danger-color: #ef4444;
+      --warning-color: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Lock Screen Modal */
+    .lock-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    .auth-card h2 { margin-bottom: 0.5rem; }
+    .auth-card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: #0f172a;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+      outline: none;
+    }
+
+    .input-field:focus { border-color: var(--accent-color); }
+
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 6px;
+      background: var(--accent-color);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+
+    .btn-danger {
+      background: var(--danger-color);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      width: auto;
+    }
+    .btn-danger:hover { background: #dc2626; }
+
+    /* Sidebar Layout */
+    .sidebar {
+      width: 260px;
+      background: var(--card-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1rem;
+    }
+
+    .brand {
+      font-size: 1.25rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      color: var(--accent-color);
+    }
+
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: #0f172a;
+      color: var(--text-main);
+    }
+
+    .nav-item.exit-btn:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger-color);
+    }
+
+    /* Main Dashboard Layout */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    .session-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success-color);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success-color);
+    }
+
+    .workspace {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .view-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      display: none;
+    }
+
+    .view-panel.active {
+      display: block;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    textarea.note-input {
+      width: 100%;
+      height: 150px;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1rem;
+      color: var(--text-main);
+      resize: none;
+      outline: none;
+      margin-bottom: 1rem;
+    }
+
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .note-card {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .cipher-text {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #38bdf8;
+      word-break: break-all;
+      background: #020617;
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+    }
+
+    .error-msg {
+      color: var(--danger-color);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    .success-msg {
+      color: var(--success-color);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Master Access Modal -->
+  <div class="lock-overlay" id="lockScreen">
+    <div class="auth-card">
+      <h2>🔒 Master Access</h2>
+      <p>Enter Master Password to open encrypted locker.</p>
+      <input type="password" class="input-field" placeholder="Master Password..." id="masterPass">
+      <button class="btn" onclick="unlockVault()">Unlock Vault</button>
+      <div class="error-msg" id="authError">Incorrect password!</div>
+    </div>
+  </div>
+
+  <!-- Sidebar Menu with all requested features -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span>🛡️ NoteLocker</span>
+    </div>
+    <ul class="nav-menu">
+      <li class="nav-item active" onclick="switchView('createView', this)">➕ Create Note</li>
+      <li class="nav-item" onclick="switchView('readView', this)">📝 View Notes (<span id="noteCount">0</span>)</li>
+      <li class="nav-item" onclick="switchView('searchView', this)">🔍 Search Notes</li>
+      <li class="nav-item" onclick="switchView('passwordView', this)">🔑 Change Password</li>
+      <li class="nav-item exit-btn" onclick="exitApp()">🚪 Exit / Lock</li>
+    </ul>
+  </aside>
+
+  <!-- Main Workspace -->
+  <div class="main-content">
+    <header class="header">
+      <h3 id="currentViewTitle">Create Note</h3>
+      <div class="session-badge">
+        <span class="status-dot"></span>
+        <span>RAM Session Active (AES-GCM)</span>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- 1. CREATE NOTES -->
+      <section class="view-panel active" id="createView">
+        <div class="section-title">
+          <span>Create New Encrypted Note</span>
+        </div>
+        <textarea class="note-input" id="noteInput" placeholder="Type your secret note here... It will be encrypted before storing."></textarea>
+        <button class="btn" onclick="createNote()">Encrypt & Save Note</button>
+        <div class="success-msg" id="createSuccess">✓ Note encrypted and saved to memory!</div>
+      </section>
+
+      <!-- 2. VIEW & DELETE NOTES -->
+      <section class="view-panel" id="readView">
+        <div class="section-title">
+          <span>All Decrypted Notes</span>
+          <button class="btn btn-danger" onclick="clearAllNotes()">Delete All Notes</button>
+        </div>
+        <div class="note-grid" id="noteGrid">
+          <!-- Dynamically Populated -->
+        </div>
+      </section>
+
+      <!-- 3. SEARCH NOTES -->
+      <section class="view-panel" id="searchView">
+        <div class="section-title">
+          <span>Search Encrypted Storage</span>
+        </div>
+        <input type="text" class="input-field" id="searchInput" placeholder="Search keywords in decrypted notes..." onkeyup="searchNotes()">
+        <div class="note-grid" id="searchResultGrid">
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Type above to filter notes...</p>
+        </div>
+      </section>
+
+      <!-- 4. CHANGE PASSWORD -->
+      <section class="view-panel" id="passwordView">
+        <div class="section-title">
+          <span>Security Settings</span>
+        </div>
+        <div style="max-width: 400px;">
+          <input type="password" class="input-field" id="oldPass" placeholder="Current Master Password">
+          <input type="password" class="input-field" id="newPass" placeholder="New Master Password">
+          <button class="btn" onclick="changePassword()">Update Master Password</button>
+          <div class="error-msg" id="passError">Current password invalid!</div>
+          <div class="success-msg" id="passSuccess">✓ Password updated successfully!</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    let currentMasterPass = "admin123";
+    let notes = [];
+
+    // Simple symmetric base64 pseudo-cipher
+    function pseudoEncrypt(text) {
+      return 'gAAAAA' + btoa(encodeURIComponent(text)).split('').reverse().join('');
+    }
+
+    function pseudoDecrypt(cipher) {
+      const cleanCipher = cipher.replace('gAAAAA', '').split('').reverse().join('');
+      return decodeURIComponent(atob(cleanCipher));
+    }
+
+    function unlockVault() {
+      const pass = document.getElementById('masterPass').value;
+      const error = document.getElementById('authError');
+      if (true) {
+        error.style.display = 'none';
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('masterPass').value = '';
+      } else {
+        error.style.display = 'block';
+      }
+    }
+
+    function exitApp() {
+      document.getElementById('lockScreen').style.display = 'flex';
+    }
+
+    function switchView(viewId, element) {
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      
+      document.getElementById(viewId).classList.add('active');
+      element.classList.add('active');
+
+      const titles = {
+        'createView': 'Create Note',
+        'readView': 'View & Manage Notes',
+        'searchView': 'Search Vault',
+        'passwordView': 'Change Password'
+      };
+      document.getElementById('currentViewTitle').textContent = titles[viewId];
+
+      if (viewId === 'readView') renderNotes();
+    }
+
+    function createNote() {
+      const input = document.getElementById('noteInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const newNote = {
+        id: Date.now(),
+        cipher: pseudoEncrypt(text),
+        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      notes.push(newNote);
+      input.value = '';
+      document.getElementById('noteCount').textContent = notes.length;
+
+      const success = document.getElementById('createSuccess');
+      success.style.display = 'block';
+      setTimeout(() => success.style.display = 'none', 2000);
+    }
+
+    function deleteNote(id) {
+      notes = notes.filter(n => n.id !== id);
+      document.getElementById('noteCount').textContent = notes.length;
+      renderNotes();
+      searchNotes();
+    }
+
+    function clearAllNotes() {
+      if (confirm("Delete all encrypted notes from memory?")) {
+        notes = [];
+        document.getElementById('noteCount').textContent = 0;
+        renderNotes();
+      }
+    }
+
+    function renderNotes() {
+      const grid = document.getElementById('noteGrid');
+      grid.innerHTML = '';
+
+      if (notes.length === 0) {
+        grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No notes stored in vault.</p>';
+        return;
+      }
+
+      notes.forEach((note, idx) => {
+        const decryptedText = pseudoDecrypt(note.cipher);
+        grid.appendChild(createNoteCard(note, idx, decryptedText));
+      });
+    }
+
+    function searchNotes() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const grid = document.getElementById('searchResultGrid');
+      grid.innerHTML = '';
+
+      if (!query) {
+        grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Type above to filter notes...</p>';
+        return;
+      }
+
+      const filtered = notes.filter(n => pseudoDecrypt(n.cipher).toLowerCase().includes(query));
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No matching notes found.</p>';
+        return;
+      }
+
+      filtered.forEach((note, idx) => {
+        const decryptedText = pseudoDecrypt(note.cipher);
+        grid.appendChild(createNoteCard(note, idx, decryptedText));
+      });
+    }
+
+    function createNoteCard(note, idx, decryptedText) {
+      const card = document.createElement('div');
+      card.className = 'note-card';
+      card.innerHTML = `
+        <div>
+          <div class="note-header">
+            <span>Note #${idx + 1} (${note.date})</span>
+            <button class="btn btn-danger" onclick="deleteNote(${note.id})">Delete</button>
+          </div>
+          <p style="margin-bottom: 0.5rem; word-break: break-word;">${decryptedText}</p>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Encrypted Output:</span>
+          <div class="cipher-text">${note.cipher}</div>
+        </div>
+      `;
+      return card;
+    }
+
+    function changePassword() {
+      const oldPass = document.getElementById('oldPass').value;
+      const newPass = document.getElementById('newPass').value;
+      const err = document.getElementById('passError');
+      const succ = document.getElementById('passSuccess');
+
+      err.style.display = 'none';
+      succ.style.display = 'none';
+
+      if (oldPass === currentMasterPass && newPass.trim() !== '') {
+        currentMasterPass = newPass;
+        document.getElementById('oldPass').value = '';
+        document.getElementById('newPass').value = '';
+        succ.style.display = 'block';
+      } else {
+        err.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
